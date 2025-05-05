@@ -27,6 +27,15 @@ var createCmd = &cobra.Command{
 			return
 		}
 
+		// If more than one argument is provided, show the error message
+		if ( len(args) > 1 ) {
+			fmt.Println("Invalid plugin name provided")
+			fmt.Println("Correct name should not contain spaces or special characters")
+			fmt.Println("Example:")
+			fmt.Println("plugkit create my-plugin")
+			return
+		}
+
 		pluginName := args[0]
 
 		downloadPluginBoilerplate(pluginName)
