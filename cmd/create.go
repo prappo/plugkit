@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -25,146 +26,167 @@ var createCmd = &cobra.Command{
 	plugkit create my-plugin
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// If not plugin name is provided, show the help message
-
-		if len(args) == 0 {
+		if len(args) != 1 {
+			fmt.Println("Error: Please provide a plugin name")
+			fmt.Println("Example: plugkit create my-plugin")
 			cmd.Help()
 			return
 		}
 
-		// If more than one argument is provided, show the error message
-		if len(args) > 1 {
-			fmt.Println("Invalid plugin name provided")
-			fmt.Println("Correct name should not contain spaces or special characters")
-			fmt.Println("Example:")
-			fmt.Println("plugkit create my-plugin")
-			return
+		if err := createPlugin(args[0]); err != nil {
+			fmt.Printf("Error creating plugin: %v\n", err)
+			os.Exit(1)
 		}
-
-		pluginName := args[0]
-
-		downloadPluginBoilerplate(pluginName)
 	},
 }
 
-func downloadPluginBoilerplate(pluginName string) {
-	// Download the plugin boilerplate from the GitHub repository ( https://github.com/prappo/wordpress-plugin-boilerplate )
+func createPlugin(pluginName string) error {
+	fmt.Printf("Creating WordPress plugin: %s\n", pluginName)
 
-	downloadURL := "https://github.com/prappo/wordpress-plugin-boilerplate/archive/refs/heads/main.zip"
+	// Download boilerplate
+	zipPath := pluginName + ".zip"
+	if err := downloadBoilerplate(zipPath); err != nil {
+		return fmt.Errorf("failed to download boilerplate: %w", err)
+	}
+	defer os.Remove(zipPath)
 
-	// Send GET request to the download URL
-
-	response, err := http.Get(downloadURL)
-
-	if err != nil {
-		fmt.Println("Error downloading the plugin boilerplate")
+	// Extract files
+	if err := extractFiles(zipPath, pluginName); err != nil {
+		return fmt.Errorf("failed to extract files: %w", err)
 	}
 
-	defer response.Body.Close()
+	fmt.Printf("\nPlugin '%s' created successfully! 🎉\n", pluginName)
+	return nil
+}
 
-	out, err := os.Create(pluginName + ".zip")
+func downloadBoilerplate(zipPath string) error {
+	fmt.Println("Downloading plugin boilerplate...")
 
+	resp, err := http.Get("https://github.com/prappo/wordpress-plugin-boilerplate/archive/refs/heads/main.zip")
 	if err != nil {
-		fmt.Println("Error creating the plugin boilerplate file")
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
 	}
 
-	// Copy response body to the file
-	_, err = io.Copy(out, response.Body)
+	// Create progress bar
+	bar := progressbar.NewOptions64(
+		resp.ContentLength,
+		progressbar.OptionSetDescription("Downloading"),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionSetWidth(15),
+		progressbar.OptionThrottle(65*time.Millisecond),
+		progressbar.OptionShowCount(),
+		progressbar.OptionOnCompletion(func() {
+			fmt.Fprint(os.Stderr, "\n")
+		}),
+		progressbar.OptionSpinnerType(14),
+		progressbar.OptionFullWidth(),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "=",
+			SaucerHead:    ">",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}),
+	)
+
+	out, err := os.Create(zipPath)
 	if err != nil {
-		fmt.Println("Error copying the plugin boilerplate to the file")
+		return err
 	}
+	defer out.Close()
 
-	// Close the output file
-	out.Close()
+	// Create a proxy reader that updates the progress bar
+	_, err = io.Copy(io.MultiWriter(out, bar), resp.Body)
+	return err
+}
 
-	// Unzip the plugin boilerplate
-	fmt.Println("Unzipping the plugin boilerplate...")
+func extractFiles(zipPath, pluginName string) error {
+	fmt.Println("Extracting files...")
 
-	zipReader, err := zip.OpenReader(pluginName + ".zip")
+	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
-		fmt.Println("Error opening the zip file")
+		return err
 	}
+	defer reader.Close()
 
-	defer zipReader.Close()
+	// Create progress bar for extraction
+	bar := progressbar.NewOptions(
+		len(reader.File),
+		progressbar.OptionSetDescription("Extracting"),
+		progressbar.OptionSetWidth(15),
+		progressbar.OptionThrottle(65*time.Millisecond),
+		progressbar.OptionShowCount(),
+		progressbar.OptionOnCompletion(func() {
+			fmt.Fprint(os.Stderr, "\n")
+		}),
+		progressbar.OptionSpinnerType(14),
+		progressbar.OptionFullWidth(),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "=",
+			SaucerHead:    ">",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}),
+	)
 
-	destinationDir := "./" + pluginName
-	for _, file := range zipReader.File {
-		// Skip the root directory entry
-		if file.Name == "wordpress-plugin-boilerplate-main/" {
+	prefix := "wordpress-plugin-boilerplate-main/"
+	for _, file := range reader.File {
+		// Skip root directory
+		if file.Name == prefix {
 			continue
 		}
 
-		// Remove the boilerplate directory prefix from the path
-		relativePath := file.Name
-		if len(file.Name) > len("wordpress-plugin-boilerplate-main/") {
-			relativePath = file.Name[len("wordpress-plugin-boilerplate-main/"):]
+		// Get relative path
+		relPath := file.Name
+		if len(file.Name) > len(prefix) {
+			relPath = file.Name[len(prefix):]
 		}
 
-		fmt.Println("Extracting file: ", relativePath)
-
-		fpath := filepath.Join(destinationDir, relativePath)
-
-		if file.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
-		} else {
-			// Create the file
-			if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-				fmt.Println(err)
-			}
-
-			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			rc, err := file.Open()
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			_, err = io.Copy(outFile, rc)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			outFile.Close()
-			rc.Close()
+		destPath := filepath.Join(pluginName, relPath)
+		if err := extractFile(file, destPath); err != nil {
+			return fmt.Errorf("failed to extract %s: %w", relPath, err)
 		}
+
+		bar.Add(1)
 	}
-
-	// Close the zip reader before removing the file
-	zipReader.Close()
-
-	// Remove the zip file
-	removeZipFile(pluginName)
-
-	fmt.Println("Plugin boilerplate created successfully")
+	return nil
 }
 
-func removeZipFile(pluginName string) {
-	// Add a small delay to ensure all file handles are released
-	time.Sleep(100 * time.Millisecond)
-
-	err := os.Remove("./" + pluginName + ".zip")
-	if err != nil {
-		fmt.Println("Error removing the zip file")
-		fmt.Println(err)
-		return
+func extractFile(file *zip.File, destPath string) error {
+	if file.FileInfo().IsDir() {
+		return os.MkdirAll(destPath, os.ModePerm)
 	}
 
-	fmt.Println("Zip file removed successfully")
+	// Create parent directories
+	if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+		return err
+	}
+
+	// Open source file
+	rc, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	// Create destination file
+	out, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Copy contents
+	_, err = io.Copy(out, rc)
+	return err
 }
 
 func init() {
 	rootCmd.AddCommand(createCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// createCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
