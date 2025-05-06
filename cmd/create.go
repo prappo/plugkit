@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/prappo/plugkit/internal/config"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
@@ -62,7 +63,7 @@ func createPlugin(pluginName string) error {
 func downloadBoilerplate(zipPath string) error {
 	fmt.Println("Downloading plugin boilerplate...")
 
-	resp, err := http.Get("https://github.com/prappo/wordpress-plugin-boilerplate/archive/refs/heads/main.zip")
+	resp, err := http.Get(config.GetConfig()["download_url"])
 	if err != nil {
 		return err
 	}
