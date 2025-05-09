@@ -178,4 +178,8 @@ func cleanUp(pluginName string) {
 		}
 	}
 	fmt.Println("\nCleanup complete!")
+	fmt.Println("\ncd " + pluginName)
+	fmt.Println("npm install")
+	fmt.Println("composer install")
+	fmt.Println("npm run dev")
 }
