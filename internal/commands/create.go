@@ -29,6 +29,7 @@ func CreatePlugin(pluginName string) error {
 	}
 
 	fmt.Printf("\nPlugin '%s' created successfully! 🎉\n", pluginName)
+	cleanUp(pluginName)
 	return nil
 }
 
@@ -158,4 +159,23 @@ func extractFile(file *zip.File, destPath string) error {
 	// Copy contents
 	_, err = io.Copy(out, rc)
 	return err
+}
+
+func cleanUp(pluginName string) {
+	// List of files and directories to remove
+	filesToRemove := []string{
+		"npm",
+		".storybook",
+		"documentation",
+		".github",
+	}
+
+	// Remove files and directories
+	for _, file := range filesToRemove {
+		fpath := filepath.Join(pluginName, file)
+		if _, err := os.Stat(fpath); err == nil {
+			os.RemoveAll(fpath)
+		}
+	}
+	fmt.Println("\nCleanup complete!")
 }
