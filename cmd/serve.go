@@ -1,11 +1,12 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 )
@@ -27,8 +28,17 @@ var serveCmd = &cobra.Command{
 			cmd.Help()
 			return
 		}
-		fmt.Println("serve called")
-		fmt.Println(len(args))
+		// Run system command 'npm run dev' in the plugin directory using cobra
+		sysCmd := exec.Command("npm", "--prefix", "myplugin", "run", "dev:server")
+		sysCmd.Stdout = os.Stdout
+		sysCmd.Stderr = os.Stderr
+		err := sysCmd.Run()
+		if err != nil {
+			fmt.Println("Error running npm run dev:", err)
+			return
+		}
+		fmt.Println("npm run dev output:")
+
 	},
 }
 
