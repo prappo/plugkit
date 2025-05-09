@@ -23,13 +23,17 @@ var serveCmd = &cobra.Command{
 	plugkit serve
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		if len(args) > 1 {
 			fmt.Println("Invalid number of arguments")
 			cmd.Help()
 			return
 		}
-		// Run system command 'npm run dev' in the plugin directory using cobra
-		sysCmd := exec.Command("npm", "--prefix", "myplugin", "run", "dev:server")
+
+		pluginDir := args[0]
+		// Run system command 'npm run dev:server' in the plugin directory using cobra
+
+		sysCmd := exec.Command("npm", "--prefix", pluginDir, "run", "dev:server")
 		sysCmd.Stdout = os.Stdout
 		sysCmd.Stderr = os.Stderr
 		err := sysCmd.Run()
