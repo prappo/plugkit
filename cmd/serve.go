@@ -38,10 +38,10 @@ var serveCmd = &cobra.Command{
 		sysCmd.Stderr = os.Stderr
 		err := sysCmd.Run()
 		if err != nil {
-			fmt.Println("Error running npm run dev:", err)
+			fmt.Println("Error running npm run dev:server", err)
 			return
 		}
-		fmt.Println("npm run dev output:")
+		fmt.Println("npm run dev:server output:")
 
 	},
 }
