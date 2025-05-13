@@ -1,0 +1,59 @@
+name: Build and Release Go Binaries
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.5'
+
+      - name: Build
+        run: |
+          mkdir -p dist
+          EXT=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}$EXT ./main.go
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugkit-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}*
+
+  release:
+    name: Create or Update Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create or Update Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Release
+          draft: false
+          prerelease: false
+          files: dist/**/plugkit-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
