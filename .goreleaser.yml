@@ -13,6 +13,9 @@ builds:
       - darwin
     goarch:
       - amd64
+    ignore:
+      - goos: darwin
+        goarch: arm64
     main: ./main.go
     binary: plugkit
     dir: .
@@ -21,14 +24,6 @@ builds:
       - -s -w
     flags:
       - -trimpath
-    hooks:
-      post: |
-        if [ "{{ .Os }}" = "darwin" ]; then
-          # Remove quarantine attribute if it exists
-          if [ -f "{{ .Path }}" ]; then
-            codesign --force --options runtime --sign - "{{ .Path }}" || true
-          fi
-        fi
 
 archives:
   - format: tar.gz
@@ -41,9 +36,40 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+      - goos: darwin
+        format: zip
     files:
       - LICENSE*
       - README*
+      - CHANGELOG*
+      - docs/*
+      - completions/*
+      - man/*
+    allow_different_binary_count: true
+
+signs:
+  - cmd: gpg
+    signature: "${artifact}.sig"
+    artifacts: all
+    args: ["--batch", "--yes", "-u", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
+    stdin: '{{ .Env.GPG_PRIVATE_KEY }}'
+    stdin_file: '{{ .Env.GPG_PRIVATE_KEY_FILE }}'
+
+macos:
+  - name_template: >-
+      {{ .ProjectName }}-
+      {{- title .Os }}-
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format: zip
+    files:
+      - LICENSE*
+      - README*
+      - CHANGELOG*
+      - docs/*
+      - completions/*
+      - man/*
     allow_different_binary_count: true
 
 changelog:
