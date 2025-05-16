@@ -9,18 +9,19 @@ on:
 jobs:
   build:
     name: Build for ${{ matrix.os }}
-    runs-on: ${{ matrix.os == 'darwin' && 'macos-latest' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
             goos: linux
+            goarch: amd64
           - os: windows-latest
             goos: windows
+            goarch: amd64
           - os: macos-latest
             goos: darwin
-        goarch: [amd64]
+            goarch: amd64
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
