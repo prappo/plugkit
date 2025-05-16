@@ -14,10 +14,17 @@ var rootCmd = &cobra.Command{
 	Use:   "plugkit",
 	Short: "Plugkit is a CLI tool to help you develop your plugins.",
 	Long: `
--------------------------------------------------------------
-Plugkit is a CLI tool to help you develop your plugins.
-Build your plugins with ease and speed.
--------------------------------------------------------------
+
+   ╭───────────────────────────────────────────────────────────────────╮
+   │                                                                   │
+   │                          Plugkit v0.0.1.                          │
+   │              Build your plugins with ease and speed.              │
+   │  Changelog: https://github.com/prappo/plugkit/releases/tag/v0.0.1 │
+   │                 Run "plugkit self-update" to update.              │
+   │                                                                   │
+   │         Follow @prappo for updates: https://github.com/prappo     │
+   │                                                                   │
+   ╰───────────────────────────────────────────────────────────────────╯
 	`,
 }
 

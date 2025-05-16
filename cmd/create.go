@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/prappo/plugkit/internal/commands"
+	"github.com/prappo/plugkit/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -22,13 +23,20 @@ var createCmd = &cobra.Command{
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			fmt.Println("Error: Please provide a plugin name")
+			fmt.Println("Error: Please provide a plugin folder name")
 			fmt.Println("Example: plugkit create my-plugin")
 			cmd.Help()
 			return
 		}
 
-		if err := commands.CreatePlugin(args[0]); err != nil {
+		folderName := args[0]
+		pluginConfig, err := config.CollectPluginConfig(folderName)
+		if err != nil {
+			fmt.Printf("Error collecting plugin configuration: %v\n", err)
+			os.Exit(1)
+		}
+
+		if err := commands.CreatePlugin(pluginConfig); err != nil {
 			fmt.Printf("Error creating plugin: %v\n", err)
 			os.Exit(1)
 		}

@@ -7,29 +7,36 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/prappo/plugkit/internal/config"
 	"github.com/schollz/progressbar/v3"
 )
 
-func CreatePlugin(pluginName string) error {
-	fmt.Printf("Creating WordPress plugin: %s\n", pluginName)
+func CreatePlugin(pluginConfig *config.PluginConfig) error {
+	fmt.Printf("Creating WordPress plugin: %s\n", pluginConfig.PluginName)
 
 	// Download boilerplate
-	zipPath := pluginName + ".zip"
+	zipPath := pluginConfig.OriginalName + ".zip"
 	if err := downloadBoilerplate(zipPath); err != nil {
 		return fmt.Errorf("failed to download boilerplate: %w", err)
 	}
 	defer os.Remove(zipPath)
 
 	// Extract files
-	if err := extractFiles(zipPath, pluginName); err != nil {
+	if err := extractFiles(zipPath, pluginConfig.OriginalName); err != nil {
 		return fmt.Errorf("failed to extract files: %w", err)
 	}
 
-	fmt.Printf("\nPlugin '%s' created successfully! 🎉\n", pluginName)
-	cleanUp(pluginName)
+	// Update plugin files with configuration
+	if err := updatePluginFiles(pluginConfig); err != nil {
+		return fmt.Errorf("failed to update plugin files: %w", err)
+	}
+
+	fmt.Printf("\nPlugin '%s' created successfully! 🎉\n", pluginConfig.PluginName)
+	cleanUp(pluginConfig.OriginalName)
 	return nil
 }
 
@@ -159,6 +166,101 @@ func extractFile(file *zip.File, destPath string) error {
 	// Copy contents
 	_, err = io.Copy(out, rc)
 	return err
+}
+
+func updatePluginFiles(config *config.PluginConfig) error {
+	// First rename the main plugin file
+	oldMainFile := filepath.Join(config.OriginalName, "wordpress-plugin-boilerplate.php")
+	newMainFile := filepath.Join(config.OriginalName, config.PluginFileName)
+	if err := os.Rename(oldMainFile, newMainFile); err != nil {
+		return fmt.Errorf("failed to rename main plugin file: %w", err)
+	}
+
+	// Define the replacements to make
+	replacements := []struct {
+		pattern     string
+		replacement string
+		paths       []string
+		recursive   bool
+	}{
+		// Main plugin file replacements
+		{"WordPress Plugin Boilerplate", config.PluginName, []string{config.PluginFileName}, false},
+		{"A boilerplate for WordPress plugins.", config.PluginDescription, []string{config.PluginFileName}, false},
+		{"Prappo", config.AuthorName, []string{config.PluginFileName}, false},
+		{"https://prappo.github.io", config.AuthorURI, []string{config.PluginFileName}, false},
+		{`Version: [0-9]+\.[0-9]+\.[0-9]+`, fmt.Sprintf("Version: %s", config.PluginVersion), []string{config.PluginFileName}, false},
+		{"Text Domain: wordpress-plugin-boilerplate", fmt.Sprintf("Text Domain: %s", config.TextDomain), []string{config.PluginFileName}, false},
+
+		// Namespace replacements
+		{"namespace WordPressPluginBoilerplate", fmt.Sprintf("namespace %s", config.Namespace), []string{config.PluginFileName, "plugin.php"}, false},
+		{"use WordPressPluginBoilerplate", fmt.Sprintf("use %s", config.Namespace), []string{config.PluginFileName, "plugin.php"}, false},
+		{"namespace WordPressPluginBoilerplate", fmt.Sprintf("namespace %s", config.Namespace), []string{"includes"}, true},
+		{"use WordPressPluginBoilerplate", fmt.Sprintf("use %s", config.Namespace), []string{"includes"}, true},
+		{"WordPressPluginBoilerplate", config.Namespace, []string{"includes"}, true},
+
+		// Database namespace replacements
+		{"namespace WordPressPluginBoilerplate", fmt.Sprintf("namespace %s", config.Namespace), []string{"database"}, true},
+		{"WordPressPluginBoilerplate", config.Namespace, []string{"database"}, true},
+		{"use WordPressPluginBoilerplate", fmt.Sprintf("use %s", config.Namespace), []string{"database"}, true},
+
+		// Libs namespace replacements
+		{"namespace WordPressPluginBoilerplate", fmt.Sprintf("namespace %s", config.Namespace), []string{"libs"}, true},
+		{"use WordPressPluginBoilerplate", fmt.Sprintf("use %s", config.Namespace), []string{"libs"}, true},
+
+		// Function and constant replacements
+		{"wordpress_plugin_boilerplate_", fmt.Sprintf("%s_", config.PluginPrefix), []string{"includes"}, true},
+		{"WordPressPluginBoilerplate", config.MainClassName, []string{config.PluginFileName, "plugin.php"}, false},
+		{"wordpress_plugin_boilerplate_init", config.MainFunctionName, []string{config.PluginFileName}, false},
+		{"WORDPRESS_PLUGIN_BOILERPLATE_", fmt.Sprintf("%s_", config.ConstantPrefix), []string{config.PluginFileName, "includes", "plugin.php"}, true},
+	}
+
+	// Apply all replacements
+	for _, r := range replacements {
+		for _, path := range r.paths {
+			fullPath := filepath.Join(config.OriginalName, path)
+			if err := applyReplacements(fullPath, r.pattern, r.replacement, r.recursive); err != nil {
+				return fmt.Errorf("failed to apply replacements in %s: %w", path, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func applyReplacements(path, pattern, replacement string, recursive bool) error {
+	// If path is a directory and recursive is true, process all files in the directory
+	if recursive {
+		return filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && strings.HasSuffix(filePath, ".php") {
+				return replaceInFile(filePath, pattern, replacement)
+			}
+			return nil
+		})
+	}
+
+	// If path is a file, process it directly
+	return replaceInFile(path, pattern, replacement)
+}
+
+func replaceInFile(filePath, pattern, replacement string) error {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+
+	// Create a regex pattern
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("invalid pattern: %w", err)
+	}
+
+	// Replace the pattern
+	newContent := re.ReplaceAll(content, []byte(replacement))
+
+	return os.WriteFile(filePath, newContent, 0644)
 }
 
 func cleanUp(pluginName string) {
