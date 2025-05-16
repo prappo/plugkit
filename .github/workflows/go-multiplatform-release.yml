@@ -9,10 +9,17 @@ on:
 jobs:
   build:
     name: Build for ${{ matrix.os }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os == 'darwin' && 'macos-latest' || 'ubuntu-latest' }}
     strategy:
       matrix:
-        goos: [linux, windows, darwin]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            goos: linux
+          - os: windows-latest
+            goos: windows
+          - os: macos-latest
+            goos: darwin
         goarch: [amd64]
     steps:
       - name: Checkout code
@@ -31,7 +38,7 @@ jobs:
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}$EXT ./main.go
 
       - name: Sign macOS binary
-        if: matrix.goos == 'darwin'
+        if: matrix.os == 'macos-latest'
         run: |
           # Generate a self-signed certificate
           openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=plugkit"
