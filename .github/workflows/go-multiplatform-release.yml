@@ -23,30 +23,6 @@ jobs:
         with:
           go-version: '1.23.5'
 
-      - name: Generate GPG key
-        run: |
-          # Generate a temporary GPG key
-          gpg --batch --gen-key <<EOF
-          %no-protection
-          Key-Type: RSA
-          Key-Length: 4096
-          Name-Real: GitHub Actions
-          Name-Email: github-actions@github.com
-          Expire-Date: 0
-          %commit
-          EOF
-          
-          # Export the private key
-          gpg --export-secret-keys --armor github-actions@github.com > private.key
-          
-          # Get the fingerprint
-          echo "FINGERPRINT=$(gpg --list-secret-keys --keyid-format LONG github-actions@github.com | grep sec | awk '{print $2}' | cut -d'/' -f2)" >> $GITHUB_ENV
-          
-          # Export the private key to environment variable
-          echo "GPG_PRIVATE_KEY<<EOF" >> $GITHUB_ENV
-          cat private.key >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -54,8 +30,6 @@ jobs:
           args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_FINGERPRINT: ${{ env.FINGERPRINT }}
-          GPG_PRIVATE_KEY: ${{ env.GPG_PRIVATE_KEY }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
