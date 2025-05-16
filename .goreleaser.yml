@@ -1,3 +1,5 @@
+version: 2
+
 before:
   hooks:
     - go mod tidy
@@ -41,13 +43,7 @@ archives:
       - docs/*
       - completions/*
       - man/*
-    ignore:
-      - "**/*.md"
-      - "**/*.yml"
-      - "**/*.yaml"
-      - "**/*.go"
-      - "**/*.mod"
-      - "**/*.sum"
+    allow_different_binary_count: true
 
 changelog:
   sort: asc
