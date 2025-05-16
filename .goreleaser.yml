@@ -1,0 +1,60 @@
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+    ignore:
+      - goos: darwin
+        goarch: arm64
+    main: ./main.go
+    binary: plugkit
+    dir: .
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    ldflags:
+      - -s -w
+    flags:
+      - -trimpath
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- title .Os }}-
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE*
+      - README*
+      - CHANGELOG*
+      - docs/*
+      - completions/*
+      - man/*
+    ignore:
+      - "**/*.md"
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "**/*.go"
+      - "**/*.mod"
+      - "**/*.sum"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - Merge pull request
+      - Merge branch 

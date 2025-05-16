@@ -1,4 +1,4 @@
-name: Build Go Binaries
+name: goreleaser
 
 on:
   push:
@@ -6,54 +6,27 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build:
-    name: Build for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            goos: linux
-            goarch: amd64
-          - os: windows-latest
-            goos: windows
-            goarch: amd64
-          - os: macos-latest
-            goos: darwin
-            goarch: amd64
+  goreleaser:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.5'
 
-      - name: Build [Linux]
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          mkdir -p dist
-          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -trimpath -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }} ./main.go
-          tar -I 'gzip -9' -cf dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}
-
-      - name: Build [Windows]
-        if: matrix.os == 'windows-latest'
-        run: |
-          mkdir -p dist
-          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -trimpath -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.exe ./main.go
-          Compress-Archive -Path dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.exe -DestinationPath dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.zip
-
-      - name: Build [macOS]
-        if: matrix.os == 'macos-latest'
-        run: |
-          mkdir -p dist
-          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -trimpath -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }} ./main.go
-          zip -9q dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.zip dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          name: plugkit-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.* 
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
