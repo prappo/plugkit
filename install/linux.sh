@@ -14,7 +14,7 @@ unzip plugkit.zip
 
 # Move the binary to /usr/local/bin (requires sudo)
 echo "Installing plugkit..."
-sudo mv plugkit /usr/local/bin/
+sudo mv plugkit_linux_amd64_v1/plugkit /usr/local/bin/
 
 # Make the binary executable
 echo "Setting executable permissions..."
