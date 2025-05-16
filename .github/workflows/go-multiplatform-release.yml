@@ -45,20 +45,26 @@ jobs:
           openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=plugkit"
           
           # Create and setup keychain
-          security create-keychain -p "temp" build.keychain
-          security list-keychains -d user -s build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "temp" build.keychain
-          security set-keychain-settings -t 3600 -u build.keychain
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          KEYCHAIN_PASSWORD="temp"
           
-          # Import the certificate
-          security import cert.pem -k build.keychain -T /usr/bin/codesign -A
+          # Create a new keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          
+          # Configure keychain
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security default-keychain -d user -s "$KEYCHAIN_PATH"
+          
+          # Import certificate
+          security import cert.pem -k "$KEYCHAIN_PATH" -P "$KEYCHAIN_PASSWORD" -T /usr/bin/codesign
           
           # Sign the binary
-          codesign --force --options runtime --sign "plugkit" dist/plugkit-darwin-amd64
+          codesign --force --options runtime --sign "plugkit" --keychain "$KEYCHAIN_PATH" dist/plugkit-darwin-amd64
           
           # Clean up
-          security delete-keychain build.keychain
+          security delete-keychain "$KEYCHAIN_PATH"
           rm key.pem cert.pem
 
       - name: Upload artifact
