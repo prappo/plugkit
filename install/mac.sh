@@ -14,7 +14,7 @@ unzip plugkit.zip
 
 # Move the binary to /usr/local/bin (requires sudo)
 echo "Installing plugkit..."
-sudo mv plugkit /usr/local/bin/
+sudo mv plugkit_darwin_amd64_v1/plugkit /usr/local/bin/
 
 # Remove quarantine attribute
 echo "Removing quarantine attribute..."
