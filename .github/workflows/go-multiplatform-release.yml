@@ -30,6 +30,27 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}$EXT ./main.go
 
+      - name: Sign macOS binary
+        if: matrix.goos == 'darwin'
+        run: |
+          # Generate a self-signed certificate
+          openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=plugkit"
+          
+          # Create a temporary keychain
+          security create-keychain -p "temp" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "temp" build.keychain
+          
+          # Import the certificate
+          security import cert.pem -k build.keychain -T /usr/bin/codesign
+          
+          # Sign the binary
+          codesign --force --options runtime --sign "plugkit" dist/plugkit-darwin-amd64
+          
+          # Clean up
+          security delete-keychain build.keychain
+          rm key.pem cert.pem
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
