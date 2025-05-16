@@ -31,44 +31,29 @@ jobs:
         with:
           go-version: '1.23.5'
 
-      - name: Build
+      - name: Build [Linux]
+        if: matrix.os == 'ubuntu-latest'
         run: |
           mkdir -p dist
-          EXT=""
-          if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}$EXT ./main.go
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -trimpath -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }} ./main.go
+          tar -I 'gzip -9' -cf dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}
 
-      - name: Sign macOS binary
+      - name: Build [Windows]
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -trimpath -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.exe ./main.go
+          Compress-Archive -Path dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.exe -DestinationPath dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+
+      - name: Build [macOS]
         if: matrix.os == 'macos-latest'
         run: |
-          # Generate a self-signed certificate
-          openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=plugkit"
-          
-          # Create and setup keychain
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-          KEYCHAIN_PASSWORD="temp"
-          
-          # Create a new keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          
-          # Configure keychain
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychains -d user -s "$KEYCHAIN_PATH"
-          security default-keychain -d user -s "$KEYCHAIN_PATH"
-          
-          # Import certificate
-          security import cert.pem -k "$KEYCHAIN_PATH" -P "$KEYCHAIN_PASSWORD" -T /usr/bin/codesign
-          
-          # Sign the binary
-          codesign --force --options runtime --sign "plugkit" --keychain "$KEYCHAIN_PATH" dist/plugkit-darwin-amd64
-          
-          # Clean up
-          security delete-keychain "$KEYCHAIN_PATH"
-          rm key.pem cert.pem
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -trimpath -o dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }} ./main.go
+          zip -9q dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.zip dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: plugkit-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}* 
+          path: dist/plugkit-${{ matrix.goos }}-${{ matrix.goarch }}.* 
