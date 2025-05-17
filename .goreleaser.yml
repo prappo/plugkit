@@ -30,14 +30,3 @@ archives:
     files:
       - LICENSE
       - README.md
-      - CHANGELOG.md
-
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
-      - '^ci:'
-      - Merge pull request
-      - Merge branch 
