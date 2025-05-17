@@ -59,18 +59,17 @@ jobs:
           zip -r plugkit_linux_amd64_v1.zip plugkit_linux_amd64_v1/
           zip -r plugkit_windows_amd64_v1.zip plugkit_windows_amd64_v1/
 
-      - name: Create or update latest release
+      - name: Handle latest release
         run: |
-          # Check if latest release exists
+          # Delete existing latest release if it exists
           if gh release view latest &>/dev/null; then
-            # Update existing release
-            gh release upload latest dist/*.zip --clobber
-          else
-            # Create new release
-            gh release create latest \
-              --title "Latest Release" \
-              --notes "Latest release of plugkit" \
-              dist/*.zip
+            gh release delete latest --yes
           fi
+          
+          # Create new latest release
+          gh release create latest \
+            --title "Latest Release" \
+            --notes "Latest release of plugkit" \
+            dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
