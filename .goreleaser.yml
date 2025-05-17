@@ -24,6 +24,7 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}_
       v{{ .Version }}
+    format: zip
     files:
       - LICENSE
       - README.md
