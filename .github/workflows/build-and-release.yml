@@ -23,25 +23,11 @@ jobs:
         with:
           go-version: '1.24.3'
 
-      - name: Get version
-        id: get_version
-        run: |
-          # Get the latest version from git tags
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          # Increment the patch version
-          NEW_VERSION=$(echo $LATEST_TAG | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Create tag
-        run: |
-          git tag ${{ steps.get_version.outputs.version }}
-          git push origin ${{ steps.get_version.outputs.version }}
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           version: 'v2.9.0'
-          args: release --clean
+          args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
