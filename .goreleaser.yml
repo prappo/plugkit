@@ -24,9 +24,6 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}_
       v{{ .Version }}
-    builds_info:
-      id: plugkit
-      name: plugkit
     files:
       - LICENSE
       - README.md
