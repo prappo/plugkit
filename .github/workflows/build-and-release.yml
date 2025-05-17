@@ -23,6 +23,13 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - name: Remove latest tag if exists
+        run: |
+          if git tag -l "latest" | grep -q "latest"; then
+            git tag -d latest
+            git push origin :refs/tags/latest
+          fi
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
