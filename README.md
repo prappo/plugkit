@@ -1,6 +1,10 @@
 # PlugKit
 Plugkit is a CLI tool designed for rapid WordPress plugin development. It streamlines the process using a modern tech stack, helping you build plugins faster and more efficiently.
 
+
+https://github.com/user-attachments/assets/39ab761e-ca40-4613-a88c-40620a1b2523
+
+
 ## Installation
 
 ### Mac
