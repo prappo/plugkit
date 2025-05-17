@@ -9,7 +9,7 @@ mkdir -p ~/bin
 
 # Download the plugkit zip file
 echo "Downloading plugkit..."
-curl -L -o plugkit.zip https://github.com/prappo/plugkit/releases/download/v0.0.1/plugkit_darwin_amd64_v1.zip
+curl -L -o plugkit.zip https://github.com/prappo/plugkit/releases/download/latest/plugkit_darwin_amd64_v1.zip
 
 # Unzip the file
 echo "Extracting plugkit..."

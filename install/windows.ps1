@@ -7,7 +7,7 @@ New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
 Set-Location $tempDir
 
 Write-Host "Downloading plugkit..."
-$url = "https://github.com/prappo/plugkit/releases/download/v0.0.1/plugkit_windows_amd64_v1.zip"
+$url = "https://github.com/prappo/plugkit/releases/download/latest/plugkit_windows_amd64_v1.zip"
 $output = "plugkit.zip"
 try {
     Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
