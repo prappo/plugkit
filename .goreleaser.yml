@@ -25,8 +25,8 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}_
       v{{ .Version }}
     builds_info:
-      - id: plugkit
-        name: plugkit
+      id: plugkit
+      name: plugkit
     files:
       - LICENSE
       - README.md
