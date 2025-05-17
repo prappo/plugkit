@@ -45,7 +45,7 @@ func CollectPluginConfig(pluginName string) (*PluginConfig, error) {
 		OriginalName:     pluginName,
 	}
 
-	fmt.Print("Plugin Header Name [" + strings.Title(strings.ReplaceAll(pluginName, "-", " ")) + "]: ")
+	fmt.Print("Plugin Name [" + strings.Title(strings.ReplaceAll(pluginName, "-", " ")) + "]: ")
 	headerName, _ := reader.ReadString('\n')
 	headerName = strings.TrimSpace(headerName)
 	if headerName == "" {

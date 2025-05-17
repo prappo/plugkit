@@ -212,6 +212,10 @@ func updatePluginFiles(config *config.PluginConfig) error {
 		{"WordPressPluginBoilerplate", config.MainClassName, []string{config.PluginFileName, "plugin.php"}, false},
 		{"wordpress_plugin_boilerplate_init", config.MainFunctionName, []string{config.PluginFileName}, false},
 		{"WORDPRESS_PLUGIN_BOILERPLATE_", fmt.Sprintf("%s_", config.ConstantPrefix), []string{config.PluginFileName, "includes", "plugin.php"}, true},
+
+		// Composer.json namespace replacements
+		{`"name":\s*"prappo/wordpress-plugin-boilerplate"`, fmt.Sprintf(`"name": "%s/%s"`, strings.ToLower(config.Namespace), config.PluginPrefix), []string{"composer.json"}, false},
+		{"WordPressPluginBoilerplate", config.Namespace, []string{"composer.json"}, false},
 	}
 
 	// Apply all replacements
