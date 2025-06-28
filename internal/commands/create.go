@@ -195,7 +195,7 @@ func updatePluginFiles(config *config.PluginConfig) error {
 		{"namespace WordPressPluginBoilerplate", fmt.Sprintf("namespace %s", config.Namespace), []string{config.PluginFileName, "plugin.php"}, false},
 		{"use WordPressPluginBoilerplate", fmt.Sprintf("use %s", config.Namespace), []string{config.PluginFileName, "plugin.php"}, false},
 		{"namespace WordPressPluginBoilerplate", fmt.Sprintf("namespace %s", config.Namespace), []string{"includes"}, true},
-		{"use WordPressPluginBoilerplate", fmt.Sprintf("use %s", config.Namespace), []string{"includes"}, true},
+		{"use WordPressPluginBoilerplate", fmt.Sprintf("use %s", config.Namespace), []string{"includes", "views"}, true},
 		{"WordPressPluginBoilerplate", config.Namespace, []string{"includes"}, true},
 
 		// Database namespace replacements
